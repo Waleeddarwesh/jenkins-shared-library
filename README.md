@@ -88,3 +88,24 @@ Applies the infrastructure-as-code manifests located in `manifests/deployment.ya
 ---
 
 > 💡 **Best Practice:** Always test modifications to these shared library functions on a separate branch before merging to `main`, as changes here will instantly affect all dependent CI/CD pipelines!
+
+---
+
+## 🚨 Troubleshooting & Lessons Learned
+
+During the initial setup of this shared library and Jenkins agent pipeline, several complex issues were encountered and resolved. These are documented below for future reference:
+
+### 1. Maven Build Failure (`MissingProjectException`)
+- **Problem:** `mvn clean package` failed with the error `there is no POM in this directory`. Jenkins was executing the shared library functions at the root of the Git workspace, rather than inside the application subfolder (`Lab23-Jenkins-Shared-Library`), meaning Maven couldn't find the `pom.xml`.
+- **Solution:** Modified the `Jenkinsfile` to wrap the shared library function calls inside a `dir('04-Jenkins/Lab23-Jenkins-Shared-Library')` block. This guarantees that regardless of where the Jenkins Agent checks out the repository, the Groovy functions always execute relative to the actual Java application source code.
+
+### 2. Kubernetes Credential Parsing (`error: tls: failed to parse private key`)
+- **Problem:** `kubectl apply` inside the Jenkins pipeline crashed with a parsing error. This was caused by the `minikube-flat-config.yaml` file being edited and saved using a Windows text editor (like VS Code), which secretly added Windows-style carriage returns (`CRLF`) and a Byte Order Mark (BOM) to the Base64 keys. The Linux-based `kubectl` inside the Jenkins agent failed to parse these invisible characters.
+- **Solution:** A clean, pristine configuration file was generated programmatically bypassing Windows text editors, completely enforcing Unix-style (`LF`) line endings. This ensured the Base64 PEM keys could be correctly parsed by Linux containers.
+
+### 3. Docker Networking & Minikube (`Connection Refused`)
+- **Problem:** The Jenkins agent could not reach the Minikube cluster using `https://host.docker.internal:50742`. Recent versions of Docker Desktop and Minikube bind the API server exclusively to `127.0.0.1` on the Windows host. Therefore, traffic escaping the Jenkins agent container via `host.docker.internal` (which maps to the host's external network IP) was immediately dropped by the host, as nothing was listening on that interface.
+- **Solution:** 
+  1. **Direct Network Peering:** Attached the `jenkins-agent` Docker container directly to the Minikube bridge network using `docker network connect minikube jenkins-agent`.
+  2. **Direct IP Addressing:** Updated the `kubeconfig` Server URL to target Minikube's internal container IP directly (e.g., `https://192.168.49.2:8443`), completely bypassing the Windows host network and firewall.
+  3. **Hardcoded Injection:** To prevent further configuration drift from the Jenkins Credentials UI, the `withCredentials` block was bypassed, and the `kubeconfig` was injected directly into the agent container's disk (`/home/jenkins/kubeconfig`), which the shared library now explicitly references.
