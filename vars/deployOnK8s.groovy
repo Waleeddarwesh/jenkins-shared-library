@@ -2,7 +2,7 @@ def call() {
     echo "Deploying application..."
     withCredentials([
         file(
-            credentialsId: 'kubeconfig-creds',
+            credentialsId: 'kubeconfig',
             variable: 'KUBECONFIG'
         )
     ]) {
