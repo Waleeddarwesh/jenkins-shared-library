@@ -1,4 +1,9 @@
-def call() {
-    echo "Deploying application..."
-    sh "kubectl apply -f manifests/deployment.yaml --kubeconfig=/home/jenkins/kubeconfig"
+def call(Map config = [:]) {
+    def workingDir = config.workingDir ?: '.'
+    def manifestPath = config.manifestPath ?: 'manifests/deployment.yaml'
+
+    dir(workingDir) {
+        echo "Deploying application from ${manifestPath}..."
+        sh "kubectl apply -f ${manifestPath} --kubeconfig=/home/jenkins/kubeconfig"
+    }
 }
