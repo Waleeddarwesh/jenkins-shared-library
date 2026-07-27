@@ -1,4 +1,11 @@
 def call() {
     echo "Deploying application..."
-    sh 'kubectl apply -f manifests/deployment.yaml'
+    withCredentials([
+        file(
+            credentialsId: 'kubeconfig-creds',
+            variable: 'KUBECONFIG'
+        )
+    ]) {
+        sh "kubectl apply -f manifests/deployment.yaml --kubeconfig=\$KUBECONFIG"
+    }
 }
