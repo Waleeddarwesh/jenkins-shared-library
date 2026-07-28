@@ -9,10 +9,10 @@ def call(Map config = [:]) {
 
     dir(workingDir) {
         echo "GitOps Action: Updating image tag in ${manifestPath} to ${imageName}:${imageTag}..."
-        
+
         // Update manifest file image tag using sed
         sh "sed -i 's|image: .*|image: ${imageName}:${imageTag}|g' ${manifestPath}"
-        
+
         if (githubCredentialsId) {
             echo "Pushing updated deployment manifest to GitHub for ArgoCD auto-synchronization..."
             withCredentials([usernamePassword(credentialsId: githubCredentialsId, passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
@@ -21,10 +21,11 @@ def call(Map config = [:]) {
                 git config user.name "${gitUser}"
                 git add ${manifestPath}
                 git commit --amend --no-edit
-                git push --force 
+                git push --force
+                """
             }
         } else {
-            echo "⚠️ Notice: githubCredentialsId not specified. Manifest updated locally only."
+            echo "Notice: githubCredentialsId not specified. Manifest updated locally only."
         }
     }
 }
