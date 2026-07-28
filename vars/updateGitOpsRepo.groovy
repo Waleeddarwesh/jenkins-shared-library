@@ -21,7 +21,7 @@ def call(Map config = [:]) {
                 git config user.name "${gitUser}"
                 git add ${manifestPath}
                 git commit --amend --no-edit
-                git push --force
+                git push https://\$GITHUB_USER:\$GITHUB_TOKEN@github.com/\$GITHUB_USER/ivolve-cloud-devops-internship.git HEAD:main --force
                 """
             }
         } else {
