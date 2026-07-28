@@ -5,16 +5,13 @@ def call(Map config = [:]) {
     def serverIp = config.serverIp
 
     dir(workingDir) {
-        echo "Deploying application from ${manifestPath}..."
-        
+        echo "Applying manifests to Kubernetes cluster..."
         if (kubeconfigCredentialsId) {
             withCredentials([file(credentialsId: kubeconfigCredentialsId, variable: 'KUBECONFIG')]) {
-                // If a server IP is provided, use it to override the API server endpoint dynamically
                 def serverOverride = serverIp ? "--server=https://${serverIp}:8443 --insecure-skip-tls-verify=true" : ""
                 sh "kubectl apply -f ${manifestPath} --kubeconfig=\$KUBECONFIG ${serverOverride}"
             }
         } else {
-            // Fallback for hardcoded/local environments
             sh "kubectl apply -f ${manifestPath} --kubeconfig=/home/jenkins/kubeconfig"
         }
     }
